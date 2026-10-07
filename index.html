@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Video Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: a dark club-flyer board. Condensed industrial headings, mono labels like gear stencils,
+     magenta and cyan neon used only for edges, labels and hover glow. Single dark theme by design. */
+  :root {
+    --bg:#0a0910; --panel:#13111c; --panel-2:#1a1726; --line:#2b2740;
+    --text:#ece9f5; --muted:#9a94b3;
+    --pink:#ff3ec8; --cyan:#2ee6ff; --pink-soft:rgba(255,62,200,.12); --cyan-soft:rgba(46,230,255,.10);
+    --display:"Big Shoulders Display", "Oswald", "Arial Narrow", Impact, sans-serif;
+    --body:"Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme:dark;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; color:var(--text); font:16px/1.6 var(--body);
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(255,62,200,.14), transparent 60%),
+      radial-gradient(800px 500px at -10% 30%, rgba(46,230,255,.08), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  main { max-width:1080px; margin:0 auto; padding:56px 16px 80px; }
+  a { color:var(--cyan); }
+  a:focus-visible, button:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
+
+  h1 {
+    font-family:var(--display); font-weight:900; text-transform:uppercase;
+    font-size:clamp(3.2rem, 11vw, 6.6rem); line-height:.88; letter-spacing:.01em; margin:0 0 20px;
+    color:#fff; text-shadow:0 0 6px rgba(255,62,200,.9), 0 0 22px rgba(255,62,200,.55), 0 0 48px rgba(255,62,200,.3);
+  }
+  .lede { color:var(--muted); max-width:62ch; margin:0 0 28px; }
+
+  .tabs { position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px; padding-block:12px; background:linear-gradient(180deg, var(--bg) 75%, transparent); }
+  .tabs a { font-family:var(--mono); font-size:.8rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; color:var(--muted); border:1px solid var(--line); background:var(--panel); border-radius:4px; padding:9px 14px; display:flex; gap:10px; align-items:baseline; transition:color .15s, border-color .15s, box-shadow .15s; }
+  .tabs a span { color:var(--pink); opacity:.7; }
+  .tabs a:hover { color:var(--text); border-color:rgba(46,230,255,.5); }
+  .tabs a[aria-current="page"] { color:#fff; border-color:var(--pink); background:var(--pink-soft); box-shadow:0 0 18px rgba(255,62,200,.35); }
+  .tabs a[aria-current="page"] span { opacity:1; }
+  .item, .section { scroll-margin-top:76px; }
+  .view > .section:first-child, .view > .section:first-of-type { margin-top:32px; }
+  .board { display:flex; flex-direction:column; gap:28px; }
+  .item {
+    background:linear-gradient(180deg, var(--panel-2), var(--panel)); border:1px solid var(--line); border-radius:6px; padding:20px;
+    display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr); gap:26px; align-items:start;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .item:hover { border-color:rgba(46,230,255,.55); box-shadow:0 0 0 1px rgba(46,230,255,.15), 0 0 28px rgba(46,230,255,.12); }
+  .media { display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .player { display:block; position:relative; width:100%; max-width:100%; aspect-ratio:16/9; border:1px solid var(--line); padding:0; background:#000; cursor:pointer; border-radius:4px; overflow:hidden; }
+  .player img { width:100%; height:100%; object-fit:cover; display:block; opacity:.85; filter:saturate(1.1); transition:opacity .15s; }
+  .player:hover img { opacity:1; }
+  .play { position:absolute; inset:0; margin:auto; width:64px; height:44px; border-radius:4px; background:rgba(10,9,16,.8); border:1px solid var(--pink); color:var(--pink); font-size:18px; display:grid; place-items:center; box-shadow:0 0 14px rgba(255,62,200,.45); transition:background .15s, color .15s; }
+  .player:hover .play { background:var(--pink); color:#0a0910; }
+  .body { display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .num { font-family:var(--mono); color:var(--pink); font-size:.78rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; text-shadow:0 0 10px rgba(255,62,200,.6); }
+  .item h2 { margin:0; font-family:var(--display); font-weight:800; text-transform:uppercase; font-size:2rem; line-height:1; letter-spacing:.01em; text-wrap:balance; }
+  .by { color:var(--muted); margin:-4px 0 0; font-size:.95rem; }
+
+  .credits { display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:0; font-size:.86rem; }
+  .credits dt { font-family:var(--mono); font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
+  .credits dd { margin:0; }
+
+  h3 { margin:4px 0 0; font-family:var(--mono); font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.16em; color:var(--cyan); }
+  .notes { margin:0; padding-left:1.15em; font-size:.93rem; }
+  .notes li::marker { color:var(--pink); }
+  .notes li + li { margin-top:6px; }
+  .watch { font-family:var(--mono); font-size:.8rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; text-decoration:none; }
+  .watch:hover { text-shadow:0 0 10px rgba(46,230,255,.8); }
+
+  .section { margin-top:80px; }
+  .section > h2 {
+    font-family:var(--display); font-weight:900; text-transform:uppercase; font-size:clamp(2.2rem, 6vw, 3.4rem); line-height:.95; letter-spacing:.01em; margin:0 0 14px; text-wrap:balance;
+    color:#fff; text-shadow:0 0 6px rgba(46,230,255,.8), 0 0 24px rgba(46,230,255,.4);
+  }
+  .section > .intro { color:var(--muted); max-width:65ch; margin:0 0 28px; }
+  .pattern { border-top:1px solid var(--line); padding-top:28px; margin-top:36px; display:flex; flex-direction:column; gap:16px; }
+  .pattern h3.ptitle { margin:0; font-family:var(--display); font-weight:800; font-size:1.9rem; line-height:1; letter-spacing:.01em; color:var(--text); text-wrap:balance; }
+  .pattern p { margin:0; max-width:65ch; }
+  .seen { display:flex; flex-wrap:wrap; gap:8px; }
+  .seen a { font-family:var(--mono); background:var(--pink-soft); color:var(--pink); border:1px solid rgba(255,62,200,.4); border-radius:3px; padding:3px 10px; font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; text-decoration:none; }
+  .seen a:hover { background:var(--pink); color:#0a0910; }
+  .moves { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; }
+  .move { background:var(--cyan-soft); border:1px solid rgba(46,230,255,.25); border-radius:4px; padding:14px 16px; font-size:.9rem; }
+  .move b { display:block; margin-bottom:4px; font-family:var(--display); font-weight:800; font-size:1.2rem; text-transform:uppercase; letter-spacing:.02em; color:var(--cyan); }
+  .try { font-size:.93rem; max-width:65ch; }
+  .try b { font-family:var(--mono); font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--pink); }
+  .examples { display:flex; flex-direction:column; gap:28px; margin-top:8px; }
+  .connects { font-size:.88rem; color:var(--muted); margin:0; padding:10px 12px; border-left:2px solid var(--cyan); background:var(--cyan-soft); }
+  .connects b { color:var(--text); }
+  .common { margin:0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; }
+  .common li { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:16px 18px; font-size:.92rem; color:var(--muted); }
+  .common b { display:block; margin-bottom:6px; font-family:var(--display); font-weight:800; font-size:1.35rem; line-height:1.05; text-transform:uppercase; color:var(--text); }
+  .mine { border:1px solid rgba(255,62,200,.55); border-radius:6px; padding:22px 24px; background:linear-gradient(180deg, rgba(255,62,200,.08), var(--panel)); box-shadow:0 0 30px rgba(255,62,200,.12); }
+  .mine ul { margin:0; padding-left:1.2em; max-width:65ch; display:flex; flex-direction:column; gap:10px; }
+  .mine li::marker { color:var(--pink); }
+  .mine a { color:var(--cyan); }
+  .mine h3 { margin:0 0 12px; }
+  .pitch { font-family:var(--display); font-weight:800; font-size:clamp(1.5rem, 3.6vw, 2.2rem); line-height:1.08; text-transform:uppercase; color:#fff; text-shadow:0 0 18px rgba(46,230,255,.35); max-width:32ch !important; text-wrap:balance; }
+  .move a { color:var(--pink); }
+  .questions { margin:0; padding-left:1.2em; max-width:68ch; display:flex; flex-direction:column; gap:8px; }
+  .questions li::marker { color:var(--cyan); }
+
+  footer { margin-top:64px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:.76rem; }
+  footer p { margin:0 0 6px; max-width:90ch; }
+
+  @media (max-width:760px) {
+    .item { grid-template-columns:1fr; padding:16px; gap:18px; }
+    .common { grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Music Video Board</h1>
+  <p class="lede">Music videos that make me think, “I’d like to learn to do that.” The board has three parts: the videos themselves, the ideas I see running through them, and where they point for my own project. For TDM 155AI, week 4: Make a Media Inspiration Board.</p>
+
+  <nav class="tabs" aria-label="Board sections">
+    <a href="#inspiration"><span>01</span>Inspiration</a>
+    <a href="#ideas"><span>02</span>Ideas</a>
+    <a href="#next"><span>03</span>Next directions</a>
+  </nav>
+
+  <div class="view" id="inspiration">
+    <section class="section">
+      <h2>Inspiration</h2>
+      <p class="intro">Seven music videos that make me think, “I’d like to learn to do that,” with creative credits and notes on how each one works.</p>
+      <div class="board" id="board"></div>
+    </section>
+
+    <section class="section" id="related">
+      <h2>Related examples</h2>
+      <p class="intro">Two videos by Michel Gondry that take the “visuals that move with the music” idea furthest. The LCD Soundsystem video on my board is a homage to them.</p>
+      <div class="examples" id="examples"></div>
+    </section>
+  </div>
+
+  <div class="view" id="ideas">
+  <section class="section" id="patterns">
+    <h2>Two patterns across my picks</h2>
+    <p class="intro">Looking at my picks together, two ideas keep coming back. Each one suggests a different kind of video I could make, and a different set of skills to practice.</p>
+
+    <div class="pattern">
+      <h3 class="ptitle">1. Ordinary places turned into dance floors</h3>
+      <div class="seen">
+        <a href="#v-the-weekend">The Weekend</a>
+        <a href="#v-its-oh-so-quiet">It’s Oh So Quiet</a>
+        <a href="#v-when-love-takes-over">When Love Takes Over</a>
+      </div>
+      <p>All three start somewhere everyone recognizes and nobody would call glamorous: an office, an auto shop and the street outside, the Venice Beach boardwalk. Then the music takes over the space. In “The Weekend” one office worker climbs onto the photocopier and pulls her coworkers in. In “It’s Oh So Quiet” Björk wanders a drab street until the chorus hits and the whole block becomes a Hollywood musical. In “When Love Takes Over” street performers keep joining until the walk becomes a night party on the beach.</p>
+      <p>The joke and the joy come from the contrast. The place stays ordinary, so the dancing feels like it’s breaking a rule. The crowd also grows over the length of the song, so the video has a shape even without much story.</p>
+      <div class="moves">
+        <div class="move"><b>Start small, end big</b>One person starts and the crowd grows. The build gives the video its arc.</div>
+        <div class="move"><b>Let the song decide the turns</b>The big shifts land on the song’s structure: the countdown to Saturday, the jump from whispered verse to loud chorus.</div>
+        <div class="move"><b>Keep the place real</b>Real props (a photocopier, a garage, a boardwalk) make the shift into dancing land harder.</div>
+      </div>
+      <p class="try"><b>What it would take:</b> one location I can get into, a few friends willing to dance, simple choreography non-dancers can learn, and a plan that marks on the song’s timeline when each new person joins.</p>
+    </div>
+
+    <div class="pattern">
+      <h3 class="ptitle">2. Visuals that move with the music</h3>
+      <div class="seen">
+        <a href="#v-ray-of-light">Ray of Light</a>
+        <a href="#v-daft-punk-is-playing-at-my-house">Daft Punk Is Playing at My House</a>
+        <a href="#v-around-the-world">Around the World</a>
+        <a href="#v-star-guitar">Star Guitar</a>
+      </div>
+      <p>These videos make the music visible. Instead of telling a story, they give each sound something to look at. “Ray of Light” speeds the whole world up with time-lapse until the cities rush at the song’s pace. “Daft Punk Is Playing at My House” lines up performers in colored spandex so they read like a graphic equalizer. That video is itself a homage to the two <a href="#related">related examples</a>, both directed by Michel Gondry, who takes the idea furthest.</p>
+      <p>Gondry used two methods. In “Around the World,” each group of dancers plays one instrument: robots for the vocals, athletes for the bass, swimmers for the keyboard, skeletons for the guitar, mummies for the drum machine. Watching the dancers is like reading the song. In “Star Guitar,” the landscape outside a train window does the same job, with buildings and poles passing on the beats. He plotted the song on graph paper before he made it.</p>
+      <div class="moves">
+        <div class="move"><b>Map sounds to people</b>Give each instrument a costume or a move (“Around the World,” the LCD video).</div>
+        <div class="move"><b>Map sounds to things</b>Make objects, cuts or the scenery hit the beats (“Star Guitar”).</div>
+        <div class="move"><b>Change time itself</b>Speed up or slow down the footage so the world matches the tempo (“Ray of Light”).</div>
+      </div>
+      <p class="try"><b>What it would take:</b> listening closely enough to chart every part of a song, then shooting or editing to that chart. A good small exercise: pick 15 seconds of a song, write out each sound, and assign it an object or a move.</p>
+    </div>
+  </section>
+
+  <section class="section" id="common">
+    <h2>What the board has in common</h2>
+    <p class="intro">Beyond the two patterns, here is what links all nine videos on the board.</p>
+    <ul class="common">
+      <li><b>One clear idea</b>Each video can be described in a sentence: an office party, a musical in a garage, a city in time-lapse, a stage of robots and mummies. The idea carries the video more than the budget does.</li>
+      <li><b>The song’s structure drives the picture</b>The quiet and loud sections in “It’s Oh So Quiet,” the countdown in “The Weekend,” the separate instrument parts in “Around the World.” The video is built from the song, not laid over it.</li>
+      <li><b>Borrowing on purpose</b>“It’s Oh So Quiet” borrows from Hollywood musicals, “Ray of Light” from the film <i>Koyaanisqatsi</i>, and “Daft Punk Is Playing at My House” from Gondry and Spike Jonze. Remixing a known form is the same move as this week’s meme remixes.</li>
+      <li><b>Bodies more than effects</b>Most of these run on dancers, performers and real places rather than digital effects. The exception is “claws,” where a green screen does the work, and even that was shot at home. Several could be made on a small budget with good planning.</li>
+      <li><b>Shared people</b>Jonas Åkerlund directed two of my picks (“Ray of Light,” “When Love Takes Over”). Daft Punk connect three videos: their own two, and the LCD Soundsystem song named after them. Michel Gondry directed both examples, and the LCD video is a homage to him.</li>
+      <li><b>Dance and electronic music</b>Eight of the nine are dance, electronic or pop tracks with a strong beat. The exception is “It’s Oh So Quiet,” a big-band cover of a 1951 song, and even that one runs on sudden shifts in volume.</li>
+    </ul>
+  </section>
+
+  </div>
+
+  <div class="view" id="next">
+  <section class="section" id="my-video">
+    <h2>Next directions</h2>
+    <p class="intro">What the board is pointing me toward, starting from my own notes and building them into a plan for the Unit 2 project.</p>
+
+    <div class="mine">
+      <h3>My notes</h3>
+      <ul>
+        <li>I like the idea of combining a music video filmed on a single set or in a single place with time-lapse footage and surrealist visuals.</li>
+        <li><a href="#v-claws">“claws” by Charli XCX</a> maybe starts to combine those ideas.</li>
+        <li>Could it work for an a cappella music video with multiple people?</li>
+        <li>I like the color scheme of <a href="#v-lose-yourself-to-dance">“Lose Yourself to Dance.”</a></li>
+        <li>I would do less dance than <a href="#v-the-weekend">“The Weekend,”</a> but I like that the speeds change.</li>
+      </ul>
+    </div>
+
+    <div class="pattern">
+      <h3 class="ptitle">The idea in one sentence</h3>
+      <p class="pitch">A group sings a cappella in one room. The singers stay in real time while the room around them speeds up, changes color and turns surreal.</p>
+    </div>
+
+    <div class="pattern">
+      <h3 class="ptitle">Building it out</h3>
+      <div class="moves">
+        <div class="move"><b>One set</b>One room keeps the whole group in frame and gives me control over light and props. <a href="#v-the-weekend">“The Weekend”</a> and <a href="#v-its-oh-so-quiet">“It’s Oh So Quiet”</a> transform one ordinary place, and <a href="#v-claws">“claws”</a> never leaves home. Locking the camera in place lets every shot of the room line up.</div>
+        <div class="move"><b>Time-lapse</b>Like <a href="#v-ray-of-light">“Ray of Light,”</a> the room can rush through a day while the song plays. Its math is a useful reality check: one frame every ten seconds means half an hour of shooting for five seconds on screen. Light moving across the walls from morning to night could be the arc of the video.</div>
+        <div class="move"><b>Changing speeds</b>What I like in “The Weekend” is the shifts in speed, not the dancing. The speed could follow the song’s sections: real time for the verses, time-lapse for the choruses, a sudden slowdown on the quietest moment.</div>
+        <div class="move"><b>Surreal visuals</b>“claws” gets its surreal look from a green screen on a small budget. Practical tricks work too: objects that appear and vanish between time-lapse frames, impossible backgrounds in the window, the room changing color mid-phrase.</div>
+        <div class="move"><b>A cappella, many people</b>With no instruments, the voices are the band. Taking a cue from <a href="#v-around-the-world">“Around the World,”</a> each voice part (bass, beatbox, harmonies, lead) could get its own person, place in the room and color, so you can see who is making each sound.</div>
+        <div class="move"><b>Color</b>Build a palette from stills of <a href="#v-lose-yourself-to-dance">“Lose Yourself to Dance”</a> and match it with lights and clothing. Each voice part could get one color from that palette.</div>
+        <div class="move"><b>Less dance, more movement</b>Instead of choreography, the movement comes from the camera, the speed changes and simple staging: singers turning, stepping forward for their part, or freezing while the room moves around them.</div>
+      </div>
+    </div>
+
+    <div class="pattern">
+      <h3 class="ptitle">Small studies to try</h3>
+      <ul class="common">
+        <li><b>Time-lapse test</b>Shoot 30 minutes of one room with a locked phone and see what five seconds of it looks like.</li>
+        <li><b>Voice map</b>Take 15 seconds of an a cappella song, list every voice part, and give each one a person, a spot and a color.</li>
+        <li><b>Speed switch</b>Edit one clip that moves from real time to time-lapse and back on the beat.</li>
+        <li><b>Surreal shot</b>Try one green-screen or in-camera trick, like an object that appears between frames.</li>
+        <li><b>Color test</b>Light one person with the palette and compare it to the reference stills.</li>
+      </ul>
+    </div>
+
+    <div class="pattern">
+      <h3 class="ptitle">Questions to answer next</h3>
+      <ul class="questions">
+        <li>Which song? An existing a cappella arrangement, or one we arrange ourselves?</li>
+        <li>How many singers, and who? If I can’t find enough, I could sing several parts myself and appear several times in the frame.</li>
+        <li>Record the audio first and lip-sync, or record live on set? Time-lapse is easier with a finished track.</li>
+        <li>Which room, and can I leave the camera and lights set up for a whole day?</li>
+        <li>How do the singers stay in real time while the room is in time-lapse? Green screen, shooting them separately and layering, or a simpler compromise?</li>
+      </ul>
+    </div>
+  </section>
+  </div>
+
+  <footer>
+    <p>Credits from <a href="https://imvdb.com">IMVDb</a>, <a href="https://shots.net/news/view/30832-lcd-soundsystem-daft-punk-is-playing-at-my-house">shots</a>, and the Wikipedia articles on each song, checked October 6, 2026. Where sources disagree, the board follows the more detailed account.</p>
+    <p>Videos play from YouTube. If a player says “unavailable,” use “Open on YouTube.”</p>
+  </footer>
+</main>
+
+<script>
+// ---- The board. Edit credits and notes here. ----
+const BOARD = [
+  { title: "The Weekend", artist: "Michael Gray", year: 2004, id: "N3kkNfH4yco",
+    credits: [
+      ["Director", "Mike Harris"],
+      ["Vocals", "Shèna"],
+      ["Label", "Eye Industries / Universal"],
+    ],
+    notes: [
+      "The story is the song's countdown: an office worker waiting for Saturday turns the office into a dance floor.",
+      "It escalates. She climbs onto the photocopier and recruits her coworkers until the whole office is dancing.",
+      "One location, everyday props, no effects. This is a setup I could actually shoot.",
+    ] },
+
+  { title: "Lose Yourself to Dance", artist: "Daft Punk ft. Pharrell Williams & Nile Rodgers", year: 2013, id: "NF-kLy44Hls",
+    credits: [
+      ["Directors", "Thomas Bangalter, Guy-Manuel de Homem-Christo, Warren Fu, Paul Hahn, Cédric Hervet"],
+      ["Cinematography", "Thomas Bangalter"],
+      ["Editor", "Cédric Hervet"],
+      ["Producer", "Paul Hahn"],
+      ["Art director", "Tino Schaedler"],
+      ["Wardrobe", "Hedi Slimane for Saint Laurent; styled by Nicolas Bru"],
+      ["Production", "Daft Arts"],
+    ],
+    notes: [
+      "A pure performance video with no story, so lighting, staging and wardrobe carry everything.",
+      "Shot on 70mm film during the same shoot as “Get Lucky”: two videos from one set of footage.",
+      "Made in-house: the directors are the band and their regular collaborators, and Bangalter is credited as cinematographer.",
+    ] },
+
+  { title: "It’s Oh So Quiet", artist: "Björk", year: 1995, id: "htobTBlCvUU",
+    credits: [
+      ["Director", "Spike Jonze"],
+      ["Cinematography", "Lance Acord"],
+      ["Editor", "Eric Zumbrunnen"],
+      ["Choreography", "Michael Rooney"],
+      ["Producer", "Vincent Landay"],
+      ["Production design", "Teri Whittaker"],
+      ["Costumes", "Casey Storm"],
+    ],
+    notes: [
+      "The video follows the song's quiet/loud structure: whispered verses in slow motion, then the choruses explode into full musical numbers.",
+      "It's a homage to Hollywood musicals (Busby Berkeley, <i>The Umbrellas of Cherbourg</i>). A drab auto shop in the San Fernando Valley becomes a stage for a full dance company.",
+      "Won Best Choreography at the 1996 MTV Video Music Awards.",
+    ] },
+
+  { title: "Daft Punk Is Playing at My House", artist: "LCD Soundsystem", year: 2005, id: "Cj8JrQ9w5jY",
+    credits: [
+      ["Director", "Chris Cairns"],
+      ["Producer", "Grace Bodie"],
+      ["Editor", "Amanda Jones"],
+      ["Production", "Partizan"],
+    ],
+    notes: [
+      "A music video about music videos. It borrows the swimmers, mummies, robots, skeletons and spacemen from Michel Gondry's “Around the World” and Spike Jonze's “Da Funk.”",
+      "Performers in red, yellow and green spandex line streets and staircases like a graphic equalizer: the music made visible.",
+      "Homage as a method: keep recognizable pieces, move them somewhere new. That's the same move as this week's meme remixes.",
+    ] },
+
+  { title: "Ray of Light", artist: "Madonna", year: 1998, id: "x3ov9USxVxY",
+    credits: [
+      ["Director", "Jonas Åkerlund"],
+      ["Cinematography", "Henrik Halvarsson"],
+      ["Editors", "Jonas Åkerlund & Max Vitali"],
+      ["Production design", "Mattias Lindgren"],
+      ["Producer", "Nicola Doring"],
+      ["Production", "Oil Factory"],
+    ],
+    notes: [
+      "Time-lapse at one frame every ten seconds: half an hour of shooting for five seconds on screen. Filmed over more than 14 days in LA, New York, London, Las Vegas and Stockholm.",
+      "The sped-up cities match the song's rush, cut against Madonna's performance shot in Los Angeles.",
+      "Compare it with <i>Koyaanisqatsi</i> (1982). Won the Grammy and MTV's Video of the Year.",
+    ] },
+
+  { title: "When Love Takes Over", artist: "David Guetta ft. Kelly Rowland", year: 2009, id: "zudbz4hOcbc",
+    credits: [
+      ["Director", "Jonas Åkerlund"],
+      ["Location", "Venice Beach, Los Angeles (shot May 19, 2009)"],
+      ["Label", "Virgin"],
+    ],
+    notes: [
+      "Two storylines converge: Rowland walks through Venice while Guetta carts his DJ gear toward the shore, and they meet for a night party. Guetta said this mirrors how they recorded the song apart.",
+      "A crowd builds as street performers (a BMX rider, a skateboarder, a breakdancer) join in. It's the same escalation as “The Weekend.”",
+      "Same director as “Ray of Light,” in a completely different register.",
+    ] },
+
+  { title: "claws", artist: "Charli XCX", year: 2020, id: "WAo8X-rIt8k",
+    credits: [
+      ["Director", "Charlotte Rutherford"],
+      ["Cast", "Charli XCX, Huck Kwong"],
+      ["Song producer", "Dylan Brady"],
+      ["Label", "Asylum / Atlantic"],
+      ["Released", "May 1, 2020"],
+    ],
+    notes: [
+      "Made during the 2020 lockdown: a vlog-style video of Charli and her then-boyfriend Huck Kwong at home, shot against a green screen.",
+      "The green screen swaps in over-the-top backgrounds (rainbows, icebergs, high heels, sports cars). A tiny shoot ends up looking huge.",
+      "She later released the raw green-screen footage so fans could cut their own versions with their own backgrounds.",
+    ],
+    connects: "The most DIY video on the board: one home, two people, one green screen. Handing fans the raw footage to remix is the same idea as this week's meme remixes." },
+];
+
+// Related examples, shown under pattern 2.
+const EXAMPLES = [
+  { title: "Around the World", artist: "Daft Punk", year: 1997, id: "K0HSD_i2DvA",
+    credits: [
+      ["Director", "Michel Gondry"],
+      ["Choreography", "Blanca Li"],
+      ["Costumes", "Florence Fontaine"],
+      ["Lighting", "Olivier Gondry"],
+      ["Production", "Midi Minuit"],
+    ],
+    notes: [
+      "Five groups of dancers share a round stage built like a record. Each group is one instrument: robots (vocals), athletes (bass), swimmers (keyboard), skeletons (guitar) and mummies (drum machine).",
+      "When an instrument plays, its dancers move. You can follow the song's arrangement just by watching.",
+      "Gondry wanted full-body shots instead of close-ups so the choreography reads clearly. Blanca Li developed and tightened his first sequence.",
+    ],
+    connects: "The source for “Daft Punk Is Playing at My House,” which borrows its swimmers, mummies, robots and skeletons." },
+
+  { title: "Star Guitar", artist: "The Chemical Brothers", year: 2001, id: "0S43IwBF0uM",
+    credits: [
+      ["Director", "Michel Gondry (with Olivier Gondry)"],
+      ["Production", "Partizan"],
+      ["Location", "The rail line between Nîmes and Valence, France"],
+    ],
+    notes: [
+      "One continuous view from a train window. Buildings, poles, bridges and stations pass exactly on the song's beats and sounds.",
+      "Gondry plotted the song on graph paper and modeled the scenery with everyday objects (oranges, forks, books, shoes) before building it.",
+      "He shot the same journey on DV ten times through the day to get different light, then built the final sequence to fit the music.",
+    ],
+    connects: "Like “Ray of Light,” it's real places edited to the song's pace. Here every object is placed on purpose." },
+];
+// ---- End of board data ----
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const slug = s => 'v-' + s.toLowerCase().normalize('NFD').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+const card = (it, label) => `
+  <article class="item" id="${slug(it.title)}">
+    <div class="media">
+      <button class="player" data-id="${esc(it.id)}" aria-label="Play ${esc(it.title)}">
+        <img src="https://i.ytimg.com/vi/${esc(it.id)}/hqdefault.jpg" alt="" loading="lazy"><span class="play" aria-hidden="true">▶</span>
+      </button>
+      <h3>Credits</h3>
+      <dl class="credits">${it.credits.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    </div>
+    <div class="body">
+      <div class="num">${esc(label)}</div>
+      <h2>${esc(it.title)}</h2>
+      <p class="by">${esc(it.artist)}, ${esc(it.year)}</p>
+      <h3>Notes</h3>
+      <ul class="notes">${it.notes.map(n => `<li>${n}</li>`).join('')}</ul>
+      ${it.connects ? `<p class="connects"><b>Connects to my board:</b> ${it.connects}</p>` : ''}
+      <a class="watch" href="https://www.youtube.com/watch?v=${esc(it.id)}" target="_blank" rel="noopener">Open on YouTube ↗</a>
+    </div>
+  </article>`;
+
+document.getElementById('board').innerHTML = BOARD.map((it, i) => card(it, String(i + 1).padStart(2, '0'))).join('');
+document.getElementById('examples').innerHTML = EXAMPLES.map(it => card(it, 'Example')).join('');
+
+// Three views: Inspiration, Ideas, Next directions. A link to a card or section opens the view that holds it.
+const views = [...document.querySelectorAll('.view')];
+// Pause YouTube players (they keep their place). Uses the player's postMessage API, enabled with enablejsapi=1.
+const pausePlayers = scope => scope.querySelectorAll('iframe.player').forEach(f =>
+  f.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), 'https://www.youtube.com'));
+function route() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  const view = target ? (target.classList.contains('view') ? target : target.closest('.view')) : null;
+  const active = view || views[0];
+  views.forEach(v => { if (v !== active) pausePlayers(v); v.hidden = v !== active; });
+  document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + active.id ? 'page' : 'false'));
+  if (target && target !== active) target.scrollIntoView({ block: 'start' });
+  else window.scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+route();
+
+// The thumbnail loads first; the YouTube player only loads when clicked.
+document.addEventListener('click', e => {
+  const b = e.target.closest('button.player');
+  if (!b) return;
+  pausePlayers(document); // only one video plays at a time
+  const f = document.createElement('iframe');
+  f.src = `https://www.youtube.com/embed/${b.dataset.id}?autoplay=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
+  f.title = b.getAttribute('aria-label');
+  f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  f.allowFullscreen = true;
+  f.referrerPolicy = 'strict-origin-when-cross-origin';
+  f.className = 'player';
+  b.replaceWith(f);
+});
+</script>
+</body>
+</html>
